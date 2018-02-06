@@ -22,12 +22,12 @@ void Session::Open()
         {
             m_remoteSocket.async_read_some(boost::asio::buffer(m_remoteBuf), [this](const auto& err, auto size)
             {
-                HandleUpstreamRead(err, size);
+                HandleRemoteRead(err, size);
             });
 
             m_clientSocket.async_read_some(boost::asio::buffer(m_clientBuf), [this](const auto& err, auto size)
             {
-                HandleDownstreamRead(err, size);
+                HandleClientRead(err, size);
             });
         }
         else
@@ -37,19 +37,19 @@ void Session::Open()
     });
 }
 
-void Session::HandleUpstreamConnect(const boost::system::error_code& error)
+void Session::HandleRemoteConnect(const boost::system::error_code& error)
 {
     auto self(shared_from_this());
     if (!error)
     {
         m_remoteSocket.async_read_some(boost::asio::buffer(m_remoteBuf), [this, self](const auto& err, auto size)
         {
-            HandleUpstreamRead(err, size);
+            HandleRemoteRead(err, size);
         });
 
         m_clientSocket.async_read_some(boost::asio::buffer(m_clientBuf), [this, self](const auto& err, auto size)
         {
-            HandleDownstreamRead(err, size);
+            HandleClientRead(err, size);
         });
     }
     else
@@ -58,14 +58,14 @@ void Session::HandleUpstreamConnect(const boost::system::error_code& error)
     }
 }
 
-void Session::HandleUpstreamRead(const boost::system::error_code& error, std::size_t size)
+void Session::HandleRemoteRead(const boost::system::error_code& error, std::size_t size)
 {
     auto self(shared_from_this());
     if (!error)
     {
         async_write(m_clientSocket, boost::asio::buffer(m_remoteBuf.data(), size), [this, self](const auto& err, auto /*size*/)
         {
-            HandleDownstreamWrite(err);
+            HandleClientWrite(err);
         });
     }
     else
@@ -74,14 +74,14 @@ void Session::HandleUpstreamRead(const boost::system::error_code& error, std::si
     }
 }
 
-void Session::HandleDownstreamWrite(const boost::system::error_code& error)
+void Session::HandleClientWrite(const boost::system::error_code& error)
 {
     auto self(shared_from_this());
     if (!error)
     {
         m_remoteSocket.async_read_some(boost::asio::buffer(m_remoteBuf), [this, self](const auto& err, auto size)
         {
-            HandleUpstreamRead(err, size);
+            HandleRemoteRead(err, size);
         });
     }
     else
@@ -90,7 +90,7 @@ void Session::HandleDownstreamWrite(const boost::system::error_code& error)
     }
 }
 
-void Session::HandleDownstreamRead(const boost::system::error_code& error, std::size_t size)
+void Session::HandleClientRead(const boost::system::error_code& error, std::size_t size)
 {
     const auto requests = m_parser.Parse(m_clientBuf.data(), size);
     std::for_each(requests.cbegin(), requests.cend(), [this](const auto& req) { LogPrint(req); });
@@ -99,7 +99,7 @@ void Session::HandleDownstreamRead(const boost::system::error_code& error, std::
     {
         async_write(m_remoteSocket, boost::asio::buffer(m_clientBuf.data(), size), [this, self](const auto& err, auto /*size*/)
         {
-            HandleUpstreamWrite(err);
+            HandleRemoteWrite(err);
         });
     }
     else
@@ -108,14 +108,14 @@ void Session::HandleDownstreamRead(const boost::system::error_code& error, std::
     }
 }
 
-void Session::HandleUpstreamWrite(const boost::system::error_code& error)
+void Session::HandleRemoteWrite(const boost::system::error_code& error)
 {
     auto self(shared_from_this());
     if (!error)
     {
         m_clientSocket.async_read_some(boost::asio::buffer(m_clientBuf), [this, self](const auto& err, auto size)
         {
-            HandleDownstreamRead(err, size);
+            HandleClientRead(err, size);
         });
     }
     else

@@ -19,15 +19,15 @@ public:
     void Open();
 
 private:
-    void HandleUpstreamConnect(const boost::system::error_code& error);
+    void HandleRemoteConnect(const boost::system::error_code& error);
 
-    void HandleUpstreamRead(const boost::system::error_code& error, std::size_t size);
+    void HandleRemoteRead(const boost::system::error_code& error, std::size_t size);
 
-    void HandleDownstreamWrite(const boost::system::error_code& error);
+    void HandleClientWrite(const boost::system::error_code& error);
 
-    void HandleDownstreamRead(const boost::system::error_code& error, std::size_t size);
+    void HandleClientRead(const boost::system::error_code& error, std::size_t size);
 
-    void HandleUpstreamWrite(const boost::system::error_code& error);
+    void HandleRemoteWrite(const boost::system::error_code& error);
 
     void Close();
 
